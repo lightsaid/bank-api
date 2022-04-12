@@ -224,3 +224,23 @@ dropdb:
     - 创建 util/random.go 生成随机变量
 
     - 在 Makefile 添加 test 命令
+    - 继续编写测试代码
+    
+    **本次学习提交代码hash：50fd5b8679c04， msg：feat: #5 编写account crud test**
+
+
+### 6. A clean way to implement database transaction in Golang
+这一节课程讨论在golang里如何实现一个干净的事物（transaction）<br>
+
+- 如：从账户A 向 账户B 转 10块钱，此功能有五以下步
+    1. 在transfer表创建一个金额等于10的转账记录
+    1. 在entries表创建一条入账记录，账户A amount=-10
+    1. 在entries表创建一条入账记录，账户B amount=+10
+    1. 从账户A里减去10块钱
+    1. 从账户B增加10块钱
+
+**因为涉及多表的操作，要保持可靠一致性，就要使用事物，事物必须满足 `ACID` 属性**
+    * Atomicity(A)       -> 原子性，就是最小单位，不可分割，对数据库的修改要么成功执行完成，要不就全部回滚
+    * Consistency(C)     -> 一致性，事物执行后，数据库状态应该保持有效
+    * Isolation(I)       -> 隔离性，是指一组对数据库的并发修改互相不影响。
+    * Durability(D)      -> 持久性，是指对数据的修改，一旦完成，该结果就应当永远不丢失，存盘了。
