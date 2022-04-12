@@ -180,3 +180,47 @@ dropdb:
     - make sqlc 生成代码就在 db/sqlc 目录下
 
     **简直完美，太方便了**
+
+### 5. Write unit tests for database CRUD with random data in Golang
+- 安装 postgres 驱动 `go get github.com/lib/pq`
+- 使用 `go get github.com/stretchr/testify` 测试
+
+- `stretchr/testify` 库使用方式
+    ``` go
+    package db
+    import (
+        "context"
+        "testing"
+
+        "github.com/stretchr/testify/require"
+    )
+    func TestCreateAccount(t *testing.T) {
+        arg := CreateAccountParams{
+            Owner:    "张三",
+            Balance:  200,
+            Currency: "RMB",
+        }
+        account, err := testQueries.CreateAccount(context.Background(), arg)
+
+        // 检查 err 是否为nil，如果不是nil则测试不通过
+        require.NoError(t, err)
+
+        // 检查返回的账号是否为空，空则测试不通过
+        require.NotEmpty(t, account)
+
+        // 期望值和实际值对比，不一致则测试不通过
+        require.Equal(t, arg.Owner, account.Owner)
+        require.Equal(t, arg.Balance, account.Balance)
+        require.Equal(t, arg.Currency, account.Currency)
+    }
+
+    ```
+
+    - 执行 go test (或者点击：TestCreateAccount 方法上面灰色字体的 run test)
+    - 执行整个 package 测试，查看覆盖率 （一图胜千言）如图：
+        ![test](./imgs/test.jpg)
+    - 执行整个package测试之后，整个包下哪些代码没被测试都会被标颜色，这就很清晰明了
+
+    - 创建 util/random.go 生成随机变量
+
+    - 在 Makefile 添加 test 命令
