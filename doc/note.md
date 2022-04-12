@@ -146,11 +146,13 @@ dropdb:
         emit_exact_table_names: false # false -> 表名加复数
         emit_empty_slices: false
         emit_exported_queries: false
-        emit_json_tags: true
+        emit_json_tags: true # 是否生成 json tag
         emit_result_struct_pointers: false
         emit_params_struct_pointers: false
         emit_methods_with_db_argument: false
-        json_tags_case_style: "camel"
+        json_tags_case_style: "none" # json tag 字段命名风格；none -> 跟随table列的名字
+        # 生成三个文件的命名规则，分别是db.go、models.go,
+        # querier.go 指定的是，sql 语句文件后加 .go 后缀，像下面 account.sql -> account.sql.go
         output_db_file_name: "db.go"
         output_models_file_name: "models.go"
         output_querier_file_name: "querier.go"
@@ -164,7 +166,7 @@ dropdb:
         1. 第二个很重要的配置`queries: "./db/query/"`, 在配置路径下编写 CRUD SQL 语句
         1. 经过上面两步就可以生成 crud go 代码了  
     - 在 db/query/ 下编写 sql 语句, 例如创建一个 account.sql；
-    注释是很有必要的
+    注释是非常重要的，这个注释是给sqlc识别的
     ``` sql
         -- name: CreateAccount :one
         INSERT INTO accounts (
@@ -176,3 +178,5 @@ dropdb:
         ) RETURNING *;
     ```
     - make sqlc 生成代码就在 db/sqlc 目录下
+
+    **简直完美，太方便了**
