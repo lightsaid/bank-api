@@ -64,11 +64,40 @@ type TransferResult struct {
 func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferResult, error) {
 	var result TransferResult
 
-	// err := store.execTx(ctx, func(q *Queries)error {
-	// 	var err error
+	err := store.execTx(ctx, func(q *Queries) error {
+		var err error
+		// 转账记录
+		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
+			FromAccountID: arg.FromAccountID,
+			ToAccountID:   arg.ToAccountID,
+			Amount:        arg.Amount,
+		})
+		if err != nil {
+			return err
+		}
+		// 创建转账人 entries 条目数(流水账)
+		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
+			AccountID: arg.FromAccountID,
+			Amount:    -arg.Amount, // 负数，转账
+		})
 
-	// 	result.Transfer, err := q.Crea
-	// })
+		if err != nil {
+			return err
+		}
 
-	return result, nil
+		// 创建 entries 条目数(流水账)
+		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
+			AccountID: arg.ToAccountID,
+			Amount:    arg.Amount, // 整数，入账
+		})
+		if err != nil {
+			return err
+		}
+
+		//  TODO:
+
+		return nil
+	})
+
+	return result, err
 }
