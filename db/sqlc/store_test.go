@@ -21,7 +21,7 @@ func TestTransferTx(t *testing.T) {
 
 	store := NewStore(testDB)
 
-	n := 2
+	n := 5
 	amount := int64(10)
 
 	errs := make(chan error)
@@ -108,5 +108,54 @@ func TestTransferTx(t *testing.T) {
 	fmt.Println(">> after: ", updateAcount1.Balance, updateAcount2.Balance)
 	require.Equal(t, account1.Balance-int64(n)*amount, updateAcount1.Balance)
 	require.Equal(t, account2.Balance+int64(n)*amount, updateAcount2.Balance)
+
+}
+
+func TestTransferTxDeadLock(t *testing.T) {
+	// 创建两个用于转账的账号
+	account1 := createRandromAccount(t)
+	account2 := createRandromAccount(t)
+	fmt.Println(">> before: ", account1.Balance, account2.Balance)
+
+	store := NewStore(testDB)
+
+	n := 10
+	amount := int64(10)
+
+	errs := make(chan error)
+	// 测试多条转账记录，并验证
+	for i := 0; i < n; i++ {
+		fromAccountID := account1.ID
+		toAccountID := account2.ID
+
+		if i%2 == 1 {
+			fromAccountID = account2.ID
+			toAccountID = account1.ID
+		}
+		go func() {
+			_, err := store.TransferTx(context.Background(), TransferTxParams{
+				FromAccountID: fromAccountID,
+				ToAccountID:   toAccountID,
+				Amount:        amount,
+			})
+			errs <- err
+		}()
+	}
+
+	for i := 0; i < n; i++ {
+		err := <-errs
+		require.NoError(t, err)
+	}
+
+	// 最后检查两个账户的余额 balance
+	updateAcount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	require.NoError(t, err)
+
+	updateAcount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	require.NoError(t, err)
+
+	fmt.Println(">> after: ", updateAcount1.Balance, updateAcount2.Balance)
+	require.Equal(t, account1.Balance, updateAcount1.Balance)
+	require.Equal(t, account2.Balance, updateAcount2.Balance)
 
 }

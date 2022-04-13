@@ -95,46 +95,69 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		}
 
 		//  NOTE: 通过如果这里没有锁机制，一旦发生并发，就会错误 （事务隔离）
-		// account1, err := q.GetAccountForUpdate(ctx, arg.FromAccountID)
-		// if err != nil {
-		// 	return err
+		//  NOTE:
+		// if arg.FromAccountID < arg.ToAccountID {
+		// 	result.FromAccount, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
+		// 		ID:     arg.FromAccountID,
+		// 		Amount: -arg.Amount,
+		// 	})
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	result.ToAccount, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
+		// 		ID:     arg.ToAccountID,
+		// 		Amount: arg.Amount,
+		// 	})
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// } else {
+		// 	result.ToAccount, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
+		// 		ID:     arg.ToAccountID,
+		// 		Amount: arg.Amount,
+		// 	})
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	result.FromAccount, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
+		// 		ID:     arg.FromAccountID,
+		// 		Amount: -arg.Amount,
+		// 	})
+		// 	if err != nil {
+		// 		return err
+		// 	}
 		// }
-		// result.FromAccount, err = q.UpdateAcount(ctx, UpdateAcountParams{
-		// 	ID:      arg.FromAccountID,
-		// 	Balance: account1.Balance - arg.Amount,
-		// })
-		// if err != nil {
-		// 	return err
-		// }
-
-		// 上面是通过两个SQL语句更新，这里由一条SQL语句更新
-		result.FromAccount, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
-			ID:     arg.FromAccountID,
-			Amount: -arg.Amount,
-		})
-		if err != nil {
-			return err
-		}
-
-		// account2, err := q.GetAccountForUpdate(ctx, arg.ToAccountID)
-		// if err != nil {
-		// 	return err
-		// }
-		// result.ToAccount, err = q.UpdateAcount(ctx, UpdateAcountParams{
-		// 	ID:      arg.ToAccountID,
-		// 	Balance: account2.Balance + arg.Amount,
-		// })
-
-		result.ToAccount, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
-			ID:     arg.ToAccountID,
-			Amount: arg.Amount,
-		})
-		if err != nil {
-			return err
+		if arg.FromAccountID < arg.ToAccountID {
+			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountID, -arg.Amount, arg.ToAccountID, arg.Amount)
+		} else {
+			result.ToAccount, result.FromAccount, err = addMoney(ctx, q, arg.ToAccountID, arg.Amount, arg.FromAccountID, -arg.Amount)
 		}
 
 		return nil
 	})
 
 	return result, err
+}
+
+func addMoney(
+	ctx context.Context,
+	q *Queries,
+	accountID1 int64,
+	amount1 int64,
+	accountID2 int64,
+	amount2 int64,
+) (account1 Account, account2 Account, err error) {
+	account1, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
+		ID:     accountID1,
+		Amount: amount1,
+	})
+	if err != nil {
+		return
+	}
+
+	account2, err = q.AddUpdateAcountBlance(ctx, AddUpdateAcountBlanceParams{
+		ID:     accountID2,
+		Amount: amount2,
+	})
+	return
 }
