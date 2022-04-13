@@ -247,6 +247,17 @@ dropdb:
 
     **hash:b987b35 msg: feate: 转账事务test**
 
-### # 7. DB transaction lock & How to handle deadlock in Golang
-docker exec -it postgres12 psql -U root -d simple_bank
+### 7. DB transaction lock & How to handle deadlock in Golang
+- docker exec -it postgres12 psql -U root -d simple_bank
 
+### 8. How to avoid deadlock in DB transaction? Queries order matters!
+
+### 9. Deeply understand transaction isolation levels & read phenomena in MySQL & PostgreSQL
+
+
+### 10. Setup Github Actions for Golang + Postgres to run automated tests
+https://www.ruanyifeng.com/blog/2019/09/getting-started-with-github-actions.html
+
+mkdir -p .github/workflows
+
+touch .github/workflows/ci.yaml
