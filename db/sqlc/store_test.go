@@ -21,7 +21,7 @@ func TestTransferTx(t *testing.T) {
 
 	store := NewStore(testDB)
 
-	n := 5
+	n := 2
 	amount := int64(10)
 
 	errs := make(chan error)

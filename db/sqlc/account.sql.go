@@ -9,6 +9,31 @@ import (
 	"context"
 )
 
+const addUpdateAcountBlance = `-- name: AddUpdateAcountBlance :one
+UPDATE accounts 
+SET balance = balance + $1 -- 把参数名字设置为 amount
+WHERE id = $2
+RETURNING id, owner, balance, currency, created_at
+`
+
+type AddUpdateAcountBlanceParams struct {
+	Amount int64 `json:"amount"`
+	ID     int64 `json:"id"`
+}
+
+func (q *Queries) AddUpdateAcountBlance(ctx context.Context, arg AddUpdateAcountBlanceParams) (Account, error) {
+	row := q.db.QueryRowContext(ctx, addUpdateAcountBlance, arg.Amount, arg.ID)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createAccount = `-- name: CreateAccount :one
 INSERT INTO accounts (
     owner,
@@ -66,7 +91,29 @@ func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
 	return i, err
 }
 
+const getAccountForUpdate = `-- name: GetAccountForUpdate :one
+
+SELECT id, owner, balance, currency, created_at FROM accounts -- for update 查询语句，当两个事务同时操作一张表时，另一个事务会等待前一个事务commited了，才能读取
+WHERE id=$1 LIMIT 1
+FOR NO KEY UPDATE
+`
+
+// 普通 查询 语句，当并发操作同一个表时，并不会阻止另一个事务读取 (Read Commited) 下一个 SELECT 语句解决这个问题
+func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, error) {
+	row := q.db.QueryRowContext(ctx, getAccountForUpdate, id)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listAccounts = `-- name: ListAccounts :many
+
 SELECT id, owner, balance, currency, created_at FROM accounts 
 ORDER BY id
 LIMIT $1
@@ -78,6 +125,11 @@ type ListAccountsParams struct {
 	Offset int32 `json:"offset"`
 }
 
+// 告诉查询，udpate accounts 表不会更新主键ID，就不会产生死锁了
+// FOR UPDATE;  -- 此时，因为外键约束，当多事务并发时，会发生死锁
+//（场景：因为accounts中的id 在entries、transfer表中是外建，当一个事务在插入/更新entries｜transfer时，另一个事务在更新accounts 就会发生死锁）
+// 因为插入/更新entries｜transfer的事务会担心，accounts 修改了id，想等另一个事务提交了才操作， 而更新accounts的事务也担心会更新了id，影响了第一个是事务
+// 因此双方在等待对方commit，就产生了死锁。
 func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error) {
 	rows, err := q.db.QueryContext(ctx, listAccounts, arg.Limit, arg.Offset)
 	if err != nil {
