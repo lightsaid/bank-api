@@ -94,7 +94,30 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 			return err
 		}
 
-		//  TODO:
+		//  NOTE: 通过如果这里没有锁机制，一旦发生并发，就会错误 （事务隔离）
+		account1, err := q.GetAccount(ctx, arg.FromAccountID)
+		if err != nil {
+			return err
+		}
+		result.FromAccount, err = q.UpdateAcount(ctx, UpdateAcountParams{
+			ID:      arg.FromAccountID,
+			Balance: account1.Balance - arg.Amount,
+		})
+		if err != nil {
+			return err
+		}
+
+		account2, err := q.GetAccount(ctx, arg.ToAccountID)
+		if err != nil {
+			return err
+		}
+		result.ToAccount, err = q.UpdateAcount(ctx, UpdateAcountParams{
+			ID:      arg.ToAccountID,
+			Balance: account2.Balance + arg.Amount,
+		})
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})

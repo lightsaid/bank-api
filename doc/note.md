@@ -244,3 +244,9 @@ dropdb:
     * Consistency(C)     -> 一致性，事物执行后，数据库状态应该保持有效
     * Isolation(I)       -> 隔离性，是指一组对数据库的并发修改互相不影响。
     * Durability(D)      -> 持久性，是指对数据的修改，一旦完成，该结果就应当永远不丢失，存盘了。
+
+    **hash:b987b35 msg: feate: 转账事务test**
+
+### # 7. DB transaction lock & How to handle deadlock in Golang
+docker exec -it postgres12 psql -U root -d simple_bank
+
